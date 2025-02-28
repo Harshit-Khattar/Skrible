@@ -37,14 +37,14 @@ UML Diagram -- Harshit
  
 ## v0.2: Initial Prototype
  
-• User Authentication -- Harshit
-• Implement RESTAPIs -- Harshit
-• Configure MongoDB -- Harshil
-• Connect React front end to the Express routes - Harshil
+- User Authentication -- Harshit
+- Implement RESTAPIs -- Harshit
+- Configure MongoDB -- Harshil
+- Connect React front end to the Express routes - Harshil
  
 ## v0.3: Full Functionality
  
-• Integrate LLM API (search, summaries) - Harshit
-• UI/UX Enhancements & Final Testing - Harshil
-• Add interactive planners or to-do lists - Harshit
-• Add the admin views - Harshil
+- Integrate LLM API (search, summaries) - Harshit
+- UI/UX Enhancements & Final Testing - Harshil
+- Add interactive planners or to-do lists - Harshit
+- Add the admin views - Harshil

@@ -50,7 +50,7 @@ Yes, we will consume the ChatGPT API or Gemini API so that users can search and 
  
 6. Technologies
  
-    •   For the front-end we will use ReactJS for a responsive and interactive front end.
-    •   Node.js and Express for the back end as they will help implement REST APIs and scalale application.
-    •   MongoDB for storing the user data.
-    •   ChatGPT / Gemini API will provide fast text search and summaries.
+- For the front-end we will use ReactJS for a responsive and interactive front end.
+- Node.js and Express for the back end as they will help implement REST APIs and scalale application.
+- MongoDB for storing the user data.
+- ChatGPT / Gemini API will provide fast text search and summaries.

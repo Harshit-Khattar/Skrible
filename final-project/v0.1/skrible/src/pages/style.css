@@ -2,11 +2,13 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  
 }
 html, body {
   height: 100%;
   font-family: sans-serif;
-  background-color: #f0f0f0;
+  background-color: #ece6f0;
+  
 }
 
 .home-container {
@@ -15,7 +17,8 @@ html, body {
   align-items: center;
   justify-content: center;
   height: 100vh; 
-  background: #e5e5e5;
+  
+ 
 }
 
 .home-container h1 {
@@ -208,4 +211,11 @@ html, body {
   outline: none;
   font-size: 1rem;
   border-radius: 4px;
+}
+.center-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 100vh;
 }

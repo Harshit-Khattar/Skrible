@@ -9,8 +9,8 @@ function Home() {
     <div className="home-container">
       <h1>Skrible</h1>
       <div>
-        <button onClick={() => navigate('/main-site')}>Login</button>
-        <button onClick={() => navigate('/main-site')}>Register</button>
+        <button onClick={() => navigate('/signin')}>Login</button>
+        <button onClick={() => navigate('/signup')}>Register</button>
       </div>
     </div>
   )

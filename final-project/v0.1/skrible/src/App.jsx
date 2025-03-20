@@ -8,7 +8,6 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-
       <Route path="/main-site" element={<MainSite />} />
       <Route path="/skribleai" element={<SkribleAI />} />
     </Routes>

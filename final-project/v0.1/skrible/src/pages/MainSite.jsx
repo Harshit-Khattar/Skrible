@@ -2,8 +2,10 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import NoteContent from './NoteContent'
 import './style.css'
+import { SignedIn, SignedOut, SignOutButton } from '@clerk/clerk-react'
 
 function MainSite() {
+ 
   const notesList = [
     { id: 1, title: 'Note 1', body: 'Lorem ipsum for Note 1...' },
     { id: 2, title: 'Note 2', body: 'Lorem ipsum for Note 2...' },
@@ -16,6 +18,8 @@ function MainSite() {
   const selectedNote = notesList.find((note) => note.id === selectedNoteId)
 
   return (
+    
+    <SignedIn>
     <div className="main-site-container">
   
       <header className="main-site-header">
@@ -53,6 +57,10 @@ function MainSite() {
         <NoteContent note={selectedNote} />
       </main>
     </div>
+    
+    <SignOutButton />
+    </SignedIn>
+    
   )
 }
 

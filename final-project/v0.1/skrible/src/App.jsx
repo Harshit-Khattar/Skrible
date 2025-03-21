@@ -3,8 +3,8 @@ import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import MainSite from './pages/MainSite'
 import SkribleAI from './pages/SkribleAI'
-import SignUp from './pages/SignUp'
-import SignIn from './pages/SignIn'
+import SignUpSkrible from './pages/SignUpToSkrible'
+import SignInSkrible from './pages/SignInToSkrible'
 
 function App() {
   return (
@@ -12,8 +12,8 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/main-site" element={<MainSite />} />
       <Route path="/skribleai" element={<SkribleAI />} />
-      <Route path="/signup" element={<SignUp />} />
-      <Route path="/signin" element={<SignIn />} />
+      <Route path="/signup" element={<SignUpSkrible />} />
+      <Route path="/signin" element={<SignInSkrible  />} />
     </Routes>
   )
 }

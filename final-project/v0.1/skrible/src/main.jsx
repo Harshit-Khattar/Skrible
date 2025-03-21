@@ -1,4 +1,4 @@
-import React, { StrictMode } from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
@@ -12,19 +12,24 @@ if (!PUBLISHABLE_KEY) {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <BrowserRouter>
-      <ClerkProvider 
-        publishableKey={PUBLISHABLE_KEY}
-        appearance={{
-          baseTheme: dark,
-          layout: {
-            unsafe_disableDevelopmentModeWarnings: true,
-          },
-        }}
-      >
+  <React.StrictMode>
+    <ClerkProvider 
+      publishableKey={PUBLISHABLE_KEY}
+      appearance={{
+        baseTheme: dark,
+           layout: {
+          unsafe_disableDevelopmentModeWarnings: true,
+        },
+      }}
+      routing={{
+        path: true,
+        afterSignIn: '/main-site',
+        afterSignUp: '/main-site'
+      }}
+    >
+      <BrowserRouter>
         <App />
-      </ClerkProvider>
-    </BrowserRouter>
-  </StrictMode>
+      </BrowserRouter>
+    </ClerkProvider>
+  </React.StrictMode>
 )

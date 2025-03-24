@@ -64,13 +64,7 @@ html, body {
 .main-site-header div p {
   margin-right: 1rem;
 }
-.main-site-header button {
-  background: #404247;
-  color: #fff;
-  border: none;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
+
 
 .main-site-sidebar {
   grid-row: 2;

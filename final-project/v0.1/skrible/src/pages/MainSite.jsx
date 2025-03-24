@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import NoteContent from './NoteContent'
 import './style.css'
-import { SignedIn, SignedOut, SignOutButton } from '@clerk/clerk-react'
+import { GoogleOneTap, SignedIn, SignedOut, SignOutButton, UserButton, UserProfile } from '@clerk/clerk-react'
 
 function MainSite() {
  
@@ -26,7 +26,7 @@ function MainSite() {
         <h1>Skrible</h1>
         <div>
           <p>Profile</p>
-          <button onClick={() => navigate('/')}>Log Out</button>
+          <UserButton />
         </div>
       </header>
 

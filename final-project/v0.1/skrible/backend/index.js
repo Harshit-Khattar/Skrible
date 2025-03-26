@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import * as process from 'process';
+import notesRouter from './routes/notes.js';
 
 dotenv.config();
 
@@ -20,14 +21,21 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
+console.log('Attempting to connect to MongoDB...');
+console.log('MongoDB URI:', MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//****:****@')); // Hide credentials
+
 mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB successfully');
+    console.log('Database name:', mongoose.connection.db.databaseName);
   })
   .catch((error) => {
     console.error('MongoDB connection error:', error);
     process.exit(1);
   });
+
+// Routes
+app.use('/api/notes', notesRouter);
 
 // Basic route to test the server
 app.get('/', (req, res) => {
@@ -37,8 +45,11 @@ app.get('/', (req, res) => {
 // Error handling middleware
 /* eslint-disable-next-line no-unused-vars */
 app.use((err, req, res, _next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  console.error('Global error handler:', err);
+  res.status(500).json({ 
+    message: 'Something went wrong!',
+    error: err.message 
+  });
 });
 
 const PORT = process.env.PORT || 3000;

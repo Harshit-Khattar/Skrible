@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import NoteContent from './NoteContent'
 import './style.css'
-import { GoogleOneTap, SignedIn, SignedOut, SignOutButton, UserButton, UserProfile, useUser } from '@clerk/clerk-react'
+import { SignedIn, UserButton, useUser } from '@clerk/clerk-react'
 
 function MainSite() {
   const { user } = useUser();
@@ -22,13 +22,12 @@ function MainSite() {
     try {
       const response = await fetch(`http://localhost:3000/api/notes/${user.id}`);
       const data = await response.json();
-      // Map MongoDB fields to frontend fields
       const mappedNotes = data.map(note => ({
-        id: note._id, // Use MongoDB's _id as our frontend id
+        id: note._id,
         title: note.heading,
         body: note.body,
         userId: note.userId,
-        _id: note._id // Keep the MongoDB _id for updates
+        _id: note._id
       }));
       setNotes(mappedNotes);
     } catch (error) {
@@ -38,7 +37,7 @@ function MainSite() {
 
   const createNewNote = () => {
     const newNote = {
-      id: Date.now(), // Temporary ID for UI
+      id: Date.now(),
       title: 'Untitled Note',
       body: '',
       userId: user.id
@@ -55,23 +54,17 @@ function MainSite() {
 
   const saveNote = async (note) => {
     try {
-      console.log('Starting save note process...');
-      console.log('Current user:', user);
-      
-      if (!user || !user.id) {
-        console.error('No user ID available');
-        alert('Please sign in to save notes');
-        return;
-      }
+      // if (!user || !user.id) {
+      //   alert('Please sign in to save notes');
+      //   return;
+      // }
 
       const noteData = {
         userId: user.id,
         heading: note.title || 'Untitled Note',
         body: note.body || '',
-        _id: note._id // Include _id if it exists (for updates)
+        _id: note._id
       };
-      
-      console.log('Preparing to send note data:', noteData);
 
       const response = await fetch('http://localhost:3000/api/notes', {
         method: 'POST',
@@ -81,22 +74,17 @@ function MainSite() {
         body: JSON.stringify(noteData),
       });
 
-      console.log('Response status:', response.status);
       const responseData = await response.json();
-      console.log('Response data:', responseData);
 
-      if (!response.ok) {
-        throw new Error(responseData.message || 'Failed to save note');
-      }
+      // if (!response.ok) {
+      //   throw new Error(responseData.message || 'Failed to save note');
+      // }
 
-      // Update the note in the local state with the MongoDB _id
       setNotes(notes.map(n => 
         n.id === note.id ? { ...n, _id: responseData._id } : n
       ));
       
-      alert('Note saved successfully!');
     } catch (error) {
-      console.error('Error saving note:', error);
       alert('Failed to save note: ' + error.message);
     }
   };
@@ -134,13 +122,13 @@ function MainSite() {
           </ul>
         </aside>
 
-        <main className="main-site-main">
+        <div className="main-site-main">
           <NoteContent 
             note={selectedNote} 
             onUpdate={updateNote}
             onSave={() => selectedNote && saveNote(selectedNote)}
           />
-        </main>
+        </div>
       </div>
     </SignedIn>
   )

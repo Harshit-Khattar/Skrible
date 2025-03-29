@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import './style.css'
 
-function NoteContent({ note, onUpdate, onSave }) {
+function NoteContent({ note, onUpdate, onSave, onFavoriteToggle }) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
 
@@ -40,6 +40,12 @@ function NoteContent({ note, onUpdate, onSave }) {
         />
         <button onClick={onSave} className="save-button">
           Save
+        </button>
+        <button 
+          onClick={onFavoriteToggle}
+          className={`favorite-button ${note.isFavorite ? 'active' : ''}`}
+        >
+          {note.isFavorite ? '★' : '☆'}
         </button>
       </div>
       <textarea

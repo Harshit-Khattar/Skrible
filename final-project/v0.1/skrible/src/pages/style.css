@@ -267,3 +267,40 @@ html, body {
   text-align: center;
   min-height: 100vh;
 }
+
+.favorite-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px 16px;
+  color: #666;
+}
+
+.favorite-button.active {
+  color: #ffd700;
+}
+
+.main-site-sidebar ul li span {
+  color: #ffd700;
+  margin-right: 8px;
+}
+
+.active-section {
+  /* Remove the color and font-weight changes */
+  /* color: #007bff; */
+  /* font-weight: bold; */
+}
+
+.main-site-sidebar li {
+  cursor: pointer;
+}
+
+.main-site-sidebar li:hover {
+  opacity: 0.8;
+}
+
+.main-site-sidebar ul ul {
+  margin-left: 20px;
+  margin-top: 8px;
+}

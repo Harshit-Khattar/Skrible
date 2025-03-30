@@ -13,9 +13,11 @@ function MainSite() {
 
   const selectedNote = notes.find((note) => note.id === selectedNoteId)
   
-  const displayedNotes = activeSection === 'favorites' 
-    ? notes.filter(note => note.isFavorite)
-    : notes;
+  const displayedNotes = {
+    notes: notes.filter(note => !note.isDeleted),
+    favorites: notes.filter(note => note.isFavorite && !note.isDeleted),
+    deleted: notes.filter(note => note.isDeleted)
+  }[activeSection];
 
   useEffect(() => {
     if (user) {
@@ -110,6 +112,64 @@ function MainSite() {
     }
   };
 
+  const handleDelete = async (noteId) => {
+    try {
+      const noteToUpdate = notes.find(note => note.id === noteId);
+      
+      await fetch(`http://localhost:3000/api/notes/${noteToUpdate._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isDeleted: true }),
+      });
+
+      setNotes(notes.map(note => 
+        note.id === noteId ? { ...note, isDeleted: true } : note
+      ));
+      
+      if (selectedNoteId === noteId) {
+        setSelectedNoteId(null);
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+  };
+
+  const handleRestore = async (noteId) => {
+    try {
+      const noteToUpdate = notes.find(note => note.id === noteId);
+      
+      await fetch(`http://localhost:3000/api/notes/${noteToUpdate._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isDeleted: false }),
+      });
+
+      setNotes(notes.map(note => 
+        note.id === noteId ? { ...note, isDeleted: false } : note
+      ));
+    } catch (error) {
+      console.error('Error restoring note:', error);
+    }
+  };
+
+  const handlePermanentDelete = async (noteId) => {
+    try {
+      const noteToDelete = notes.find(note => note.id === noteId);
+      
+      await fetch(`http://localhost:3000/api/notes/${noteToDelete._id}`, {
+        method: 'DELETE',
+      });
+
+      setNotes(notes.filter(note => note.id !== noteId));
+    } catch (error) {
+      console.error('Error permanently deleting note:', error);
+    }
+  };
+
   return (
     <SignedIn>
       <div className="main-site-container">
@@ -132,7 +192,7 @@ function MainSite() {
             My Notes
           </h2>
           <ul>
-            {activeSection === 'notes' && notes.map((note) => (
+            {activeSection === 'notes' && displayedNotes.map((note) => (
               <li key={note.id}>
                 <button onClick={() => setSelectedNoteId(note.id)}>
                   {note.title}
@@ -143,14 +203,11 @@ function MainSite() {
 
           <h3>More</h3>
           <ul>
-            <li 
-              onClick={() => setActiveSection('favorites')}
-              className={activeSection === 'favorites' ? 'active-section' : ''}
-            >
-              <span>★</span> Favourites
+            <li onClick={() => setActiveSection('favorites')}>
+              ⭐ Favourites
               {activeSection === 'favorites' && (
                 <ul>
-                  {notes.filter(note => note.isFavorite).map((note) => (
+                  {displayedNotes.map((note) => (
                     <li key={note.id}>
                       <button onClick={() => setSelectedNoteId(note.id)}>
                         {note.title}
@@ -160,7 +217,31 @@ function MainSite() {
                 </ul>
               )}
             </li>
-            <li>Recently Deleted</li>
+            <li onClick={() => setActiveSection('deleted')}>
+              🗑️ Recently Deleted
+              {activeSection === 'deleted' && (
+                <ul>
+                  {displayedNotes.map((note) => (
+                    <li key={note.id} className="deleted-note-item">
+                      <button onClick={() => setSelectedNoteId(note.id)}>
+                        {note.title}
+                      </button>
+                      <div className="deleted-note-actions">
+                        <button onClick={() => handleRestore(note.id)}>
+                          ↩️ Restore
+                        </button>
+                        <button 
+                          onClick={() => handlePermanentDelete(note.id)}
+                          className="permanent-delete"
+                        >
+                          ❌ Delete Permanently
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
           </ul>
         </aside>
 
@@ -170,6 +251,7 @@ function MainSite() {
             onUpdate={updateNote}
             onSave={() => selectedNote && saveNote(selectedNote)}
             onFavoriteToggle={() => selectedNote && handleFavoriteToggle(selectedNote.id)}
+            onDelete={() => selectedNote && handleDelete(selectedNote.id)}
           />
         </div>
       </div>

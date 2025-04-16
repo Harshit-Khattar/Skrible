@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import notesRouter from './routes/notes.js';
+import aiRouter from './routes/ai.js';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 mongoose.connect(MONGODB_URI);
 
 app.use('/api/notes', notesRouter);
+app.use('/api/ai', aiRouter);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Skrible' });

@@ -5,13 +5,21 @@ const noteSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  heading: {
+  title: {
     type: String,
     default: 'Untitled Note'
   },
   body: {
     type: String,
     default: ''
+  },
+  isFavorite: {
+    type: Boolean,
+    default: false
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true 

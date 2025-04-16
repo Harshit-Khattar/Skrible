@@ -1,50 +1,61 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState } from 'react'
+import { useUser } from '@clerk/clerk-react'
 import './style.css'
 
 function SkribleAI() {
-  const navigate = useNavigate()
+  
+  const { user } = useUser()
+  const [query, setQuery] = useState('')
+  const [response, setResponse] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    
+    const response = await fetch('http://localhost:3000/api/ai/query', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: user.id,
+        query,
+      }),
+    })
+    
+    const data = await response.json()
+    setResponse(data.response)
+    setLoading(false)
+  }
 
   return (
-    <div className="skrible-ai-container">
-   
-      <header className="skrible-ai-header">
-        <h1>Skrible</h1>
-        <div>
-          <p>Profile</p>
-          <button onClick={() => navigate('/')}>Log Out</button>
-        </div>
-      </header>
-
-      <div className="skrible-ai-body">
        
-        <aside className="skrible-ai-sidebar">
-          <button>Skrible AI</button>
-          <button>+ New Note</button>
-
-          <h2>My Notes</h2>
-          <ul>
-            <li>Note 1 ..... </li>
-            <li>Task List ..... </li>
-            <li>Project v1 ..... </li>
-          </ul>
-
-          <h3>More</h3>
-          <ul>
-            <li>Favourites</li>
-            <li>Recently Deleted</li>
-          </ul>
-        </aside>
 
         <main className="skrible-ai-main">
           <h2>Ask Skrible AI</h2>
-          <input 
-            type="text"
-            placeholder="How can I help you..."
-          />
+          
+          <form onSubmit={handleSubmit}>
+            <input 
+              type="text"
+              placeholder="How can I help you..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              disabled={loading}
+            />
+            <button type="submit" disabled={loading}>
+              {loading ? 'Processing...' : 'Ask'}
+            </button>
+          </form>
+          
+          {response && (
+            <div className="ai-response">
+              <h3>Response:</h3> 
+              <p>{response}</p>
+            </div>
+          )}
         </main>
-      </div>
-    </div>
+
   )
 }
 

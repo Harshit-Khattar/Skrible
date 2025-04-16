@@ -14,6 +14,7 @@ function App() {
       <Route path="/skribleai" element={<SkribleAI />} />
       <Route path="/signup" element={<SignUpSkrible />} />
       <Route path="/signin" element={<SignInSkrible  />} />
+      {/* <Route path="/tasks" element={<Task />} /> */}
     </Routes>
   )
 }

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+//import { useNavigate } from 'react-router-dom'
 import NoteContent from './NoteContent'
 import './style.css'
+import Task from './Task'
+import SkribleAI from './SkribleAI'
 import { SignedIn, UserButton, useUser } from '@clerk/clerk-react'
 
 function MainSite() {
@@ -9,14 +11,16 @@ function MainSite() {
   const [notes, setNotes] = useState([])
   const [selectedNoteId, setSelectedNoteId] = useState(null)
   const [activeSection, setActiveSection] = useState('notes')
-  const navigate = useNavigate()
+  //const navigate = useNavigate()
+  const [showTasks, setShowTasks] = useState(false)
+  const [showSkribleAI, setShowSkribleAI] = useState(false)
 
   const selectedNote = notes.find((note) => note.id === selectedNoteId)
   
   const displayedNotes = {
-    notes: notes.filter(note => !note.isDeleted),
-    favorites: notes.filter(note => note.isFavorite && !note.isDeleted),
-    deleted: notes.filter(note => note.isDeleted)
+    notes: notes.filter(note => note.isActive),
+    favorites: notes.filter(note => note.isFavorite && note.isActive),
+    deleted: notes.filter(note => !note.isActive)
   }[activeSection];
 
   useEffect(() => {
@@ -27,14 +31,16 @@ function MainSite() {
 
   const fetchNotes = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/notes/${user.id}`);
+      const response = await fetch(`http://localhost:3000/api/notes/${user.id}/notes`);
       const data = await response.json();
       const mappedNotes = data.map(note => ({
         id: note._id,
-        title: note.heading,
+        title: note.title,
         body: note.body,
         userId: note.userId,
-        _id: note._id
+        _id: note._id,
+        isActive: note.isActive,
+        isFavorite: note.isFavorite
       }));
       setNotes(mappedNotes);
     } catch (error) {
@@ -47,7 +53,9 @@ function MainSite() {
       id: Date.now(),
       title: 'Untitled Note',
       body: '',
-      userId: user.id
+      userId: user.id,
+      isActive: true,
+      isFavorite: false
     }
     setNotes([...notes, newNote])
     setSelectedNoteId(newNote.id)
@@ -62,15 +70,33 @@ function MainSite() {
   const saveNote = async (note) => {
     try {
       const noteData = {
-        userId: user.id,
-        heading: note.title || 'Untitled Note',
+        title: note.title || 'Untitled Note',
         body: note.body || '',
-        _id: note._id,
-        isFavorite: note.isFavorite || false
+        isFavorite: note.isFavorite || false,
+        isActive: note.isActive
       };
+      if (!note._id) {
+        noteData.userId = user.id;
+        const response = await fetch(`http://localhost:3000/api/notes/${user.id}/notes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(noteData),
+        });
+        const responseData = await response.json();
+        responseData.id = responseData._id;
+        setNotes(notes.map(n => n.id === note.id ? responseData : n)); 
+        setSelectedNoteId(responseData.id);
+        return;
+      }
+      const noteToUpdate = note
+      if (!noteToUpdate) {
+        throw new Error('Note not found');
+      }
 
-      const response = await fetch('http://localhost:3000/api/notes', {
-        method: 'POST',
+      const response = await fetch(`http://localhost:3000/api/notes/${user.id}/notes/${note._id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -78,10 +104,14 @@ function MainSite() {
       });
 
       const responseData = await response.json();
-      setNotes(notes.map(n => 
-        n.id === note.id ? { ...n, _id: responseData._id } : n
+      responseData.id = responseData._id;
+
+      console.log('Updated note:', responseData);
+
+      setNotes(notes.map(note =>
+        note._id === responseData._id ? responseData : note
       ));
-      
+      setSelectedNoteId(responseData._id);
     } catch (error) {
       alert('Failed to save note: ' + error.message);
     }
@@ -89,24 +119,16 @@ function MainSite() {
 
   const handleFavoriteToggle = async (noteId) => {
     try {
-      const noteToUpdate = notes.find(note => note.id === noteId);
-      const updatedNote = { ...noteToUpdate, isFavorite: !noteToUpdate.isFavorite };
+      const noteToUpdate = notes.find(note => note.id == noteId);
+
+      console.log(noteToUpdate);
+      console.log(noteToUpdate.isFavorite);
       
-      setNotes(notes.map(note => 
-        note.id === noteId ? updatedNote : note
-      ));
+      noteToUpdate.isFavorite = !noteToUpdate.isFavorite;
+      console.log(noteToUpdate.isFavorite);
 
-      const response = await fetch(`http://localhost:3000/api/notes/${noteToUpdate._id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isFavorite: updatedNote.isFavorite }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update favorite status');
-      }
+      //const updatedNote = { ...noteToUpdate, isFavorite: !noteToUpdate.isFavorite };
+      await saveNote(noteToUpdate);
     } catch (error) {
       console.error('Error updating favorite status:', error);
     }
@@ -115,18 +137,13 @@ function MainSite() {
   const handleDelete = async (noteId) => {
     try {
       const noteToUpdate = notes.find(note => note.id === noteId);
-      
-      await fetch(`http://localhost:3000/api/notes/${noteToUpdate._id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isDeleted: true }),
-      });
+      if (!noteToUpdate) {
+        throw new Error('Note not found');
+      }
 
-      setNotes(notes.map(note => 
-        note.id === noteId ? { ...note, isDeleted: true } : note
-      ));
+      const updatedNote = noteToUpdate
+      updatedNote.isActive = false;
+      await saveNote(updatedNote);
       
       if (selectedNoteId === noteId) {
         setSelectedNoteId(null);
@@ -139,35 +156,25 @@ function MainSite() {
   const handleRestore = async (noteId) => {
     try {
       const noteToUpdate = notes.find(note => note.id === noteId);
-      
-      await fetch(`http://localhost:3000/api/notes/${noteToUpdate._id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isDeleted: false }),
-      });
+      if (noteToUpdate.isActive) {
+        throw new Error('Note is already active');
+      }
 
-      setNotes(notes.map(note => 
-        note.id === noteId ? { ...note, isDeleted: false } : note
-      ));
+      const updatedNote = noteToUpdate;
+      updatedNote.isActive = true;
+      await saveNote(updatedNote);
     } catch (error) {
       console.error('Error restoring note:', error);
     }
   };
 
   const handlePermanentDelete = async (noteId) => {
-    try {
       const noteToDelete = notes.find(note => note.id === noteId);
-      
-      await fetch(`http://localhost:3000/api/notes/${noteToDelete._id}`, {
+      await fetch(`http://localhost:3000/api/notes/${user.id}/notes/${noteToDelete._id}`, {
         method: 'DELETE',
       });
-
-      setNotes(notes.filter(note => note.id !== noteId));
-    } catch (error) {
-      console.error('Error permanently deleting note:', error);
-    }
+      await fetchNotes();
+      setSelectedNoteId(null);
   };
 
   return (
@@ -182,11 +189,12 @@ function MainSite() {
         </header>
 
         <aside className="main-site-sidebar">
-          <button onClick={() => navigate('/skribleai')}>Skrible AI</button>
-          <button onClick={createNewNote}>+ New Note</button>
+          <button onClick={() => { setShowSkribleAI(true); setShowTasks(false); setSelectedNoteId(null); }}>Skrible AI</button>
+          <button onClick={() => { setShowTasks(true); setShowSkribleAI(false); setSelectedNoteId(null); }}>Tasks</button>
+          <button onClick={() => { createNewNote(); setShowTasks(false); setShowSkribleAI(false); setActiveSection('notes')}}>+ New Note</button>
 
           <h2 
-            onClick={() => setActiveSection('notes')}
+            onClick={() => { setActiveSection('notes'); setShowTasks(false); setShowSkribleAI(false); }}
             className={activeSection === 'notes' ? 'active-section' : ''}
           >
             My Notes
@@ -194,7 +202,7 @@ function MainSite() {
           <ul>
             {activeSection === 'notes' && displayedNotes.map((note) => (
               <li key={note.id}>
-                <button onClick={() => setSelectedNoteId(note.id)}>
+                <button onClick={() => { setSelectedNoteId(note.id); setShowTasks(false); setShowSkribleAI(false); }}>
                   {note.title}
                 </button>
               </li>
@@ -203,13 +211,15 @@ function MainSite() {
 
           <h3>More</h3>
           <ul>
-            <li onClick={() => setActiveSection('favorites')}>
-              ⭐ Favourites
+            <li>
+              <button onClick={() => { setActiveSection('favorites'); setShowTasks(false); setShowSkribleAI(false); }}>
+                ⭐ Favourites
+              </button>
               {activeSection === 'favorites' && (
                 <ul>
                   {displayedNotes.map((note) => (
                     <li key={note.id}>
-                      <button onClick={() => setSelectedNoteId(note.id)}>
+                      <button onClick={() => { setSelectedNoteId(note.id); setShowTasks(false); setShowSkribleAI(false); }}>
                         {note.title}
                       </button>
                     </li>
@@ -217,20 +227,22 @@ function MainSite() {
                 </ul>
               )}
             </li>
-            <li onClick={() => setActiveSection('deleted')}>
-              🗑️ Recently Deleted
+            <li>
+              <button onClick={() => { setActiveSection('deleted'); setShowTasks(false); setShowSkribleAI(false); }}>
+                🗑️ Recently Deleted
+              </button>
               {activeSection === 'deleted' && (
                 <ul>
                   {displayedNotes.map((note) => (
                     <li key={note.id} className="deleted-note-item">
-                      <button onClick={() => setSelectedNoteId(note.id)}>
+                      <button onClick={() => { setSelectedNoteId(note.id); setShowTasks(false); setShowSkribleAI(false); }}>
                         {note.title}
                       </button>
                       <div className="deleted-note-actions">
                         <button onClick={() => handleRestore(note.id)}>
                           ↩️ Restore
                         </button>
-                        <button 
+                        <button
                           onClick={() => handlePermanentDelete(note.id)}
                           className="permanent-delete"
                         >
@@ -246,13 +258,19 @@ function MainSite() {
         </aside>
 
         <div className="main-site-main">
-          <NoteContent 
-            note={selectedNote} 
+        {showSkribleAI ? (
+          <SkribleAI />
+        ) : showTasks ? (
+          <Task />
+        ) :  (
+          <NoteContent
+            note={selectedNote}
             onUpdate={updateNote}
             onSave={() => selectedNote && saveNote(selectedNote)}
             onFavoriteToggle={() => selectedNote && handleFavoriteToggle(selectedNote.id)}
             onDelete={() => selectedNote && handleDelete(selectedNote.id)}
           />
+        ) }
         </div>
       </div>
     </SignedIn>

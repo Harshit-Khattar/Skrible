@@ -5,6 +5,7 @@ import MainSite from './pages/MainSite'
 import SkribleAI from './pages/SkribleAI'
 import SignUpSkrible from './pages/SignUpToSkrible'
 import SignInSkrible from './pages/SignInToSkrible'
+import AdminDashboard from './pages/AdminDashboard'
 
 function App() {
   return (
@@ -13,8 +14,8 @@ function App() {
       <Route path="/main-site" element={<MainSite />} />
       <Route path="/skribleai" element={<SkribleAI />} />
       <Route path="/signup" element={<SignUpSkrible />} />
-      <Route path="/signin" element={<SignInSkrible  />} />
-      {/* <Route path="/tasks" element={<Task />} /> */}
+      <Route path="/signin" element={<SignInSkrible />} />
+      <Route path="/admin" element={<AdminDashboard />} />
     </Routes>
   )
 }

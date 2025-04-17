@@ -89,4 +89,13 @@ router.delete('/:userId/notes/:noteId', async (req, res) => {
   }
 });
 
+router.get('/all', async (req, res) => {
+  try {
+    const notes = await Note.find({});
+    res.json(notes);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching all notes', error: error.message });
+  }
+});
+
 export default router;

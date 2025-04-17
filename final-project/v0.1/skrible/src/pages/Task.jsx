@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -21,6 +22,7 @@ import Switch from '@mui/material/Switch';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { visuallyHidden } from '@mui/utils';
+import { useAuth } from '@clerk/clerk-react';
 
 function createData(id, title, description, status, priority, dueDate) {
   return {
@@ -32,19 +34,6 @@ function createData(id, title, description, status, priority, dueDate) {
     dueDate,
   };
 }
-
-const rows = [
-  createData(1, 'Complete Project Documentation', 'Write comprehensive documentation for the project', 'pending', 'high', '2024-04-15'),
-  createData(2, 'Review Pull Requests', 'Review and merge pending pull requests', 'in-progress', 'medium', '2024-04-10'),
-  createData(3, 'Update Dependencies', 'Update project dependencies to latest versions', 'completed', 'low', '2024-04-05'),
-  createData(4, 'Fix Bug in Login Flow', 'Resolve authentication issues in login process', 'pending', 'high', '2024-04-12'),
-  createData(5, 'Implement Search Feature', 'Add search functionality to the dashboard', 'in-progress', 'medium', '2024-04-20'),
-  createData(6, 'Write Unit Tests', 'Add unit tests for core functionality', 'pending', 'medium', '2024-04-18'),
-  createData(7, 'Optimize Database Queries', 'Improve database query performance', 'pending', 'high', '2024-04-25'),
-  createData(8, 'Update User Interface', 'Refresh UI components with new design', 'in-progress', 'low', '2024-04-30'),
-  createData(9, 'Deploy to Production', 'Prepare and execute production deployment', 'pending', 'high', '2024-05-01'),
-  createData(10, 'Create Backup Strategy', 'Implement automated backup system', 'pending', 'medium', '2024-04-28'),
-];
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -152,7 +141,7 @@ EnhancedTableHead.propTypes = {
 };
 
 function EnhancedTableToolbar(props) {
-  const { numSelected } = props;
+  const { numSelected, onDelete } = props;
   return (
     <Toolbar
       sx={[
@@ -187,16 +176,12 @@ function EnhancedTableToolbar(props) {
       )}
       {numSelected > 0 ? (
         <Tooltip title="Delete">
-          <IconButton>
+          <IconButton onClick={onDelete}>
             <DeleteIcon />
           </IconButton>
         </Tooltip>
       ) : (
-        <Tooltip title="Filter list">
-          <IconButton>
-            <FilterListIcon />
-          </IconButton>
-        </Tooltip>
+        <p>⠀</p>
       )}
     </Toolbar>
   );
@@ -204,14 +189,45 @@ function EnhancedTableToolbar(props) {
 
 EnhancedTableToolbar.propTypes = {
   numSelected: PropTypes.number.isRequired,
+  onDelete: PropTypes.func.isRequired
 };
 
 export default function Task() {
+  const { userId } = useAuth();
   const [order, setOrder] = React.useState('asc');
-  const [orderBy, setOrderBy] = React.useState('calories');
+  const [orderBy, setOrderBy] = React.useState('title');
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rows, setRows] = useState([]);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/api/tasks/${userId}/tasks`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+
+        const fetchedTasks = data.map(task => createData(
+          task._id,
+          task.title,
+          task.description,
+          task.status,
+          task.priority,
+          task.dueDate ? task.dueDate.split('T')[0] : ''
+        ));
+        setRows(fetchedTasks);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+      }
+    };
+    
+    if (userId) {
+      fetchTasks();
+    }
+  }, [userId]);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -256,7 +272,70 @@ export default function Task() {
     setPage(0);
   };
 
-  // Avoid a layout jump when reaching the last page with empty rows.
+  const handleDelete = async () => {
+      for (const taskId of selected) {
+        await fetch(`http://localhost:3000/api/tasks/${userId}/tasks/${taskId}`, {
+          method: 'DELETE'
+        });
+      }
+      
+      setRows(rows.filter(row => !selected.includes(row.id)));
+      setSelected([]);
+    
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    const newTaskData = {
+      title: formData.get('taskTitle'),
+      description: formData.get('taskDescription'),
+      status: formData.get('taskStatus'),
+      priority: formData.get('taskPriority'),
+      dueDate: formData.get('taskDueDate'),
+    };
+
+    try {
+      console.log('Submitting new task:', newTaskData);
+      const response = await fetch(`http://localhost:3000/api/tasks/${userId}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTaskData),
+      });
+
+      console.log('Received response:', response);
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('Server responded with error:', response.status, errorBody);
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
+      }
+
+      const addedTask = await response.json();
+      console.log('Successfully added task:', addedTask);
+
+      const newRow = createData(
+        addedTask._id,
+        addedTask.title,
+        addedTask.description,
+        addedTask.status,
+        addedTask.priority,
+        addedTask.dueDate ? addedTask.dueDate.split('T')[0] : ''
+      );
+
+      setRows([...rows, newRow]);
+
+      form.reset();
+
+    } catch (error) {
+      console.error("Error adding task in handleSubmit:", error);
+    }
+  };
+
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
@@ -265,41 +344,68 @@ export default function Task() {
       [...rows]
         .sort(getComparator(order, orderBy))
         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-    [order, orderBy, page, rowsPerPage],
+    [order, orderBy, page, rowsPerPage, rows],
   );
 
   return (
     <div>
-      <form className="form-inline ai-response">
-          <label>Title:</label>
-          <input type="text" id="taskTitle" placeholder="Enter title" name="taskTitle" />
+      <form className="form-inline ai-response" onSubmit={handleSubmit}>
+          <label htmlFor="taskTitle">Title:</label>
+          <input
+            type="text"
+            id="taskTitle"
+            placeholder="Enter title"
+            name="taskTitle"
+            required
+          />
           <p>⠀</p>
-          <label>Description:</label>
-          <input type="text" id="taskDescription" placeholder="Enter description" name="taskDescription" />
+          <label htmlFor="taskDescription">Description:</label>
+          <input
+            type="text"
+            id="taskDescription"
+            placeholder="Enter description"
+            name="taskDescription"
+            required
+          />
           <p>⠀</p>
-          <label>Status:</label>
-          <select id="taskStatus" name="status">
+          <label htmlFor="taskStatus">Status:</label>
+          <select
+            id="taskStatus"
+            name="taskStatus"
+            defaultValue="pending"
+            required
+          >
             <option value="pending">Pending</option>
             <option value="in-progress">In Progress</option>
             <option value="completed">Completed</option>
           </select>
           <p>⠀</p>
-          <label>Priority:</label>
-          <select id="taskPriority" name="priority">
+          <label htmlFor="taskPriority">Priority:</label>
+          <select
+            id="taskPriority"
+            name="taskPriority"
+            defaultValue="low"
+            required
+           >
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
           </select>
           <p>⠀</p>
-          <label>Due Date:</label>
-          <input type="date" id="taskDueDate" name="dueDate" />
+          <label htmlFor="taskDueDate">Due Date:</label>
+          <input
+            type="date"
+            id="taskDueDate"
+            name="taskDueDate"
+            required
+          />
           <p>⠀</p>
-          <button type="submit">Submit</button>
+          <button type="submit">+ Task</button>
         </form>
       <br />
       <Box sx={{ width: '100%' }}>
         <Paper sx={{ width: '100%', mb: 2 }}>
-          <EnhancedTableToolbar numSelected={selected.length} />
+          <EnhancedTableToolbar numSelected={selected.length} onDelete={handleDelete} />
           <TableContainer>
             <Table
               sx={{ minWidth: 750 }}
@@ -376,10 +482,6 @@ export default function Task() {
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
         </Paper>
-        {/* <FormControlLabel
-          control={<Switch checked={dense} onChange={handleChangeDense} />}
-          label="Dense padding"
-        /> */}
       </Box>
     </div>
   );

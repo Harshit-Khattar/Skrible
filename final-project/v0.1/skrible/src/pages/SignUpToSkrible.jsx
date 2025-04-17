@@ -12,7 +12,3 @@ function SignUpSkrible() {
 )
 }
 export default SignUpSkrible
-
-// The «SignUp/> component cannot render when a user is already signed in, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the value set in 'afterSiqnUp
-// URL instead.
-// (This notice only appears in development)

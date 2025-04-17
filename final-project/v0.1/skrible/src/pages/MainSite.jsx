@@ -119,16 +119,23 @@ function MainSite() {
 
   const handleFavoriteToggle = async (noteId) => {
     try {
-      const noteToUpdate = notes.find(note => note.id == noteId);
+      const noteToToggle = notes.find(note => note.id == noteId);
+      if (!noteToToggle) {
+        console.error('Note not found for toggling favorite');
+        return; 
+      }
 
-      console.log(noteToUpdate);
-      console.log(noteToUpdate.isFavorite);
+      // Create a new object with the toggled favorite status
+      const updatedNote = { ...noteToToggle, isFavorite: !noteToToggle.isFavorite };
       
-      noteToUpdate.isFavorite = !noteToUpdate.isFavorite;
-      console.log(noteToUpdate.isFavorite);
+      // Save the updated note
+      await saveNote(updatedNote);
 
-      //const updatedNote = { ...noteToUpdate, isFavorite: !noteToUpdate.isFavorite };
-      await saveNote(noteToUpdate);
+      // Optional: Immediately update local state for faster UI feedback 
+      // (saveNote already updates state based on server response, so this might be redundant
+      // unless saveNote takes too long or you want optimistic updates)
+      // setNotes(notes.map(note => note.id === noteId ? updatedNote : note));
+
     } catch (error) {
       console.error('Error updating favorite status:', error);
     }
@@ -177,30 +184,48 @@ function MainSite() {
       setSelectedNoteId(null);
   };
 
+  // const isAdmin = (user) => {
+  //   if (!user || !user.primaryEmailAddress) return false;
+  //   const adminEmails = process.env.REACT_APP_ADMIN_EMAILS?.split(',') || [];
+  //   return adminEmails.includes(user.primaryEmailAddress.emailAddress);
+  // };
+
   return (
     <SignedIn>
       <div className="main-site-container">
         <header className="main-site-header">
           <h1>Skrible</h1>
           <div>
+            {/* {isAdmin(user) && (
+              <button 
+                onClick={() => navigate('/admin')}
+                className="admin-button"
+              >
+                Admin Dashboard
+              </button>
+            )} */}
             <p>Profile</p>
             <UserButton />
           </div>
         </header>
 
         <aside className="main-site-sidebar">
-          <button onClick={() => { setShowSkribleAI(true); setShowTasks(false); setSelectedNoteId(null); }}>Skrible AI</button>
-          <button onClick={() => { setShowTasks(true); setShowSkribleAI(false); setSelectedNoteId(null); }}>Tasks</button>
+          <button onClick={() => { setShowSkribleAI(true); setShowTasks(false); setSelectedNoteId(null); setActiveSection('ai'); }}>Skrible AI</button>
+          <button onClick={() => { setShowTasks(true); setShowSkribleAI(false); setSelectedNoteId(null); setActiveSection('tasks'); }}>Tasks</button>
           <button onClick={() => { createNewNote(); setShowTasks(false); setShowSkribleAI(false); setActiveSection('notes')}}>+ New Note</button>
 
           <h2 
             onClick={() => { setActiveSection('notes'); setShowTasks(false); setShowSkribleAI(false); }}
             className={activeSection === 'notes' ? 'active-section' : ''}
+            style={{ cursor: 'pointer' }}
           >
             My Notes
           </h2>
           <ul>
-            {activeSection === 'notes' && displayedNotes.map((note) => (
+            {notes.filter(note => note.isActive).length === 0 && (
+               <li style={{ color: '#aaa', fontStyle: 'italic' }}>No active notes.</li>
+            )}
+            {notes.filter(note => note.isActive).map((note) => (
               <li key={note.id}>
                 <button onClick={() => { setSelectedNoteId(note.id); setShowTasks(false); setShowSkribleAI(false); }}>
                   {note.title}
@@ -210,30 +235,43 @@ function MainSite() {
           </ul>
 
           <h3>More</h3>
-          <ul>
-            <li>
-              <button onClick={() => { setActiveSection('favorites'); setShowTasks(false); setShowSkribleAI(false); }}>
+          
+          <div>
+            <button 
+              onClick={() => { setActiveSection('favorites'); setShowTasks(false); setShowSkribleAI(false); }}
+              className={activeSection === 'favorites' ? 'sidebar-button-active' : ''}
+            >
                 ⭐ Favourites
-              </button>
-              {activeSection === 'favorites' && (
-                <ul>
-                  {displayedNotes.map((note) => (
-                    <li key={note.id}>
-                      <button onClick={() => { setSelectedNoteId(note.id); setShowTasks(false); setShowSkribleAI(false); }}>
-                        {note.title}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-            <li>
-              <button onClick={() => { setActiveSection('deleted'); setShowTasks(false); setShowSkribleAI(false); }}>
+            </button>
+            {activeSection === 'favorites' && (
+              <ul style={{ marginLeft: '1rem', marginTop: '0.5rem' }}>
+                {notes.filter(note => note.isFavorite && note.isActive).length === 0 && (
+                  <li style={{ color: '#aaa', fontStyle: 'italic' }}>No favourites yet.</li>
+                )}
+                {notes.filter(note => note.isFavorite && note.isActive).map((note) => (
+                  <li key={note.id}>
+                    <button onClick={() => { setSelectedNoteId(note.id); setShowTasks(false); setShowSkribleAI(false); }}>
+                      {note.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+             <button 
+                onClick={() => { setActiveSection('deleted'); setShowTasks(false); setShowSkribleAI(false); }}
+                className={activeSection === 'deleted' ? 'sidebar-button-active' : ''}
+             >
                 🗑️ Recently Deleted
-              </button>
-              {activeSection === 'deleted' && (
-                <ul>
-                  {displayedNotes.map((note) => (
+             </button>
+             {activeSection === 'deleted' && (
+                <ul style={{ marginLeft: '1rem', marginTop: '0.5rem' }}>
+                  {notes.filter(note => !note.isActive).length === 0 && (
+                     <li style={{ color: '#aaa', fontStyle: 'italic' }}>No recently deleted notes.</li>
+                  )}
+                  {notes.filter(note => !note.isActive).map((note) => (
                     <li key={note.id} className="deleted-note-item">
                       <button onClick={() => { setSelectedNoteId(note.id); setShowTasks(false); setShowSkribleAI(false); }}>
                         {note.title}
@@ -253,8 +291,7 @@ function MainSite() {
                   ))}
                 </ul>
               )}
-            </li>
-          </ul>
+           </div>
         </aside>
 
         <div className="main-site-main">

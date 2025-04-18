@@ -15,7 +15,7 @@ function MainSite() {
   const [showTasks, setShowTasks] = useState(false)
   const [showSkribleAI, setShowSkribleAI] = useState(false)
 
-  const isAdmin = user && import.meta.env.VITE_ADMIN_IDS?.split(',').includes(user.id)
+  const isAdmin = user && import.meta.env.ADMIN_IDS?.split(',').includes(user.id)
 
   const selectedNote = notes.find((note) => note.id === selectedNoteId)
 
